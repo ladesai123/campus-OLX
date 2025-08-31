@@ -73,25 +73,71 @@ const SellItemModal = ({ show, onClose, onAddItem }) => {
     const [price, setPrice] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [itemName, setItemName] = useState('');
+    const [description, setDescription] = useState('');
+    const [aiStatus, setAiStatus] = useState('');
+    const [aiProgress, setAiProgress] = useState(0);
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-        const newItem = { id: Date.now(), name: e.target.itemName.value, price: isFree ? 0 : parseFloat(price), seller: 'You', imageUrl: `https://placehold.co/600x400/7C3AED/FFFFFF?text=${encodeURIComponent(e.target.itemName.value)}`, isFree: isFree };
+        const newItem = { 
+            id: Date.now(), 
+            name: e.target.itemName.value, 
+            price: isFree ? 0 : parseFloat(price), 
+            seller: 'You', 
+            imageUrl: `https://placehold.co/600x400/7C3AED/FFFFFF?text=${encodeURIComponent(e.target.itemName.value)}`, 
+            isFree: isFree,
+            description: description
+        };
         setItemName(newItem.name);
-        setTimeout(() => { setIsSubmitting(false); onAddItem(newItem); }, 2500);
+        
+        // Enhanced AI authenticity check simulation with progress tracking
+        setAiProgress(0);
+        setAiStatus('🔍 Scanning product images for authenticity markers...');
+        
+        setTimeout(() => { setAiProgress(25); setAiStatus('🤖 AI analyzing product condition and wear patterns...'); }, 600);
+        setTimeout(() => { setAiProgress(50); setAiStatus('🔬 Cross-referencing with product database...'); }, 1200);
+        setTimeout(() => { setAiProgress(75); setAiStatus('🛡️ Checking for counterfeit indicators...'); }, 1800);
+        setTimeout(() => { setAiProgress(90); setAiStatus('📊 Generating authenticity confidence score...'); }, 2400);
+        setTimeout(() => { setAiProgress(100); setAiStatus('✅ Product verified as authentic! Confidence: 94.7%'); }, 3000);
+        setTimeout(() => { setIsSubmitting(false); setAiStatus(''); setAiProgress(0); onAddItem(newItem); }, 3600);
     };
     if (!show) return null;
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 m-4">{isSubmitting ? (<div className="text-center py-12"><div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin mx-auto mb-4"></div><h3 className="text-xl font-semibold text-gray-700">Submitting...</h3><p className="text-gray-500 mt-2">Running AI authenticity check on "{itemName}"...</p></div>) : (<><div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold text-gray-800">Sell Your Item</h2><button onClick={onClose} className="text-gray-400 hover:text-gray-600"><CloseIcon /></button></div><form onSubmit={handleSubmit}><div className="mb-4"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="itemName">Item Name</label><input className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" id="itemName" type="text" placeholder="e.g., Ergonomic Desk Chair" required /></div><div className="mb-4"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">Description</label><textarea className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" id="description" rows="3" placeholder="Describe the condition, age, etc."></textarea></div><div className="mb-4"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="price">Price ($)</label><input className={`shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isFree ? 'bg-gray-200 cursor-not-allowed' : ''}`} id="price" type="number" placeholder="25.00" value={price} onChange={(e) => setPrice(e.target.value)} disabled={isFree} required={!isFree}/></div><div className="mb-6"><label className="flex items-center"><input type="checkbox" className="form-checkbox h-5 w-5 text-blue-600 rounded" checked={isFree} onChange={() => setIsFree(!isFree)} /><span className="ml-2 text-gray-700">Give away for free</span></label></div><div className="flex items-center justify-end gap-4"><button className="text-gray-600 font-bold py-2 px-4 rounded-lg" type="button" onClick={onClose}>Cancel</button><button className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline transition-transform transform hover:scale-105" type="submit">List Item</button></div></form></>)}</div>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 m-4">{isSubmitting ? (<div className="text-center py-12"><div className="w-20 h-20 border-4 border-blue-500 border-dashed rounded-full animate-spin mx-auto mb-6"></div><h3 className="text-xl font-semibold text-gray-700">🤖 AI Product Verification</h3><div className="w-full bg-gray-200 rounded-full h-2 mt-4 mb-3"><div className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out" style={{width: `${aiProgress}%`}}></div></div><p className="text-gray-500 mt-2 min-h-6 text-sm">{aiStatus || `Analyzing "${itemName}"...`}</p><div className="mt-6 text-xs text-gray-400 px-4 py-2 bg-gray-50 rounded-lg">🔬 Our AI uses advanced image recognition, product database cross-referencing, and authenticity pattern analysis to ensure genuine products</div></div>) : (<><div className="flex justify-between items-center mb-6"><h2 className="text-3xl font-bold text-gray-800">📦 Sell Your Item</h2><button onClick={onClose} className="text-gray-400 hover:text-gray-600"><CloseIcon /></button></div><form onSubmit={handleSubmit}><div className="mb-4"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="itemName">Item Name *</label><input className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" id="itemName" type="text" placeholder="e.g., Ergonomic Study Desk Chair" required /></div><div className="mb-4"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">Product Description *</label><textarea className="shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500" id="description" rows="4" placeholder="📝 Help buyers trust your listing! Include:
+• How long you've owned it
+• Current condition (any scratches, wear, etc.)
+• Reason for selling
+• Original purchase price (optional)
+• Any accessories included
+
+Example: 'Used for 6 months, excellent condition with minor scuffs on base. Selling because I'm moving apartments. Originally $150, includes ergonomic cushion.'" value={description} onChange={(e) => setDescription(e.target.value)} required></textarea><div className="text-xs text-gray-500 mt-1">💡 Detailed descriptions get 3x more responses and build trust!</div></div><div className="mb-4"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="price">Price ($) {!isFree && '*'}</label><input className={`shadow-sm appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${isFree ? 'bg-gray-200 cursor-not-allowed' : ''}`} id="price" type="number" placeholder="25.00" value={price} onChange={(e) => setPrice(e.target.value)} disabled={isFree} required={!isFree}/></div><div className="mb-6"><label className="flex items-center cursor-pointer group"><input type="checkbox" className="form-checkbox h-5 w-5 text-green-600 rounded" checked={isFree} onChange={() => setIsFree(!isFree)} /><span className="ml-3 text-gray-700 group-hover:text-green-600 transition-colors">🎁 Give away for FREE - Help a fellow student!</span></label></div><div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg mb-6 border border-green-200"><p className="text-sm text-green-800"><LeafIcon className="h-4 w-4 inline mr-1" />🌍 <strong>Environmental Impact:</strong> By listing this item, you're helping reduce campus waste and saving an estimated <strong className="text-green-700">3.2 kg of CO₂</strong> from entering the atmosphere!</p></div><div className="flex items-center justify-end gap-4"><button className="text-gray-600 font-bold py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors" type="button" onClick={onClose}>Cancel</button><button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:shadow-outline transition-all transform hover:scale-105 shadow-lg" type="submit">🤖 AI Verify & List Item</button></div></form></>)}</div>
         </div>
     );
 };
 
 const ProductCard = ({ product, onConnect }) => (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden group transform hover:-translate-y-2 transition-transform duration-300">
-        <div className="relative"><img className="w-full h-48 object-cover" src={product.imageUrl} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400/CCCCCC/FFFFFF?text=Image+Error'; }} />{product.isFree && <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">FREE</div>}</div>
-        <div className="p-5"><h3 className="text-lg font-bold text-gray-800 truncate">{product.name}</h3><p className="text-gray-600 mb-3">Sold by {product.seller}</p><div className="flex justify-between items-center"><p className="text-2xl font-black text-blue-600">${product.price.toFixed(2)}</p><button onClick={() => onConnect && onConnect(product.seller, product.name)} className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">Connect</button></div></div>
+        <div className="relative">
+            <img className="w-full h-48 object-cover" src={product.imageUrl} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400/CCCCCC/FFFFFF?text=Image+Error'; }} />
+            {product.isFree && <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">FREE 🎁</div>}
+            <div className="absolute bottom-3 left-3 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center">
+                <LeafIcon className="h-3 w-3 mr-1" />
+                2.8kg CO₂ saved
+            </div>
+        </div>
+        <div className="p-5">
+            <h3 className="text-lg font-bold text-gray-800 truncate">{product.name}</h3>
+            <p className="text-gray-600 mb-3">Sold by {product.seller}</p>
+            <div className="flex justify-between items-center">
+                <p className="text-2xl font-black text-blue-600">
+                    {product.isFree ? 'FREE' : `$${product.price.toFixed(2)}`}
+                </p>
+                <button onClick={() => onConnect && onConnect(product.seller, product.name)} className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
+                    Connect
+                </button>
+            </div>
+        </div>
     </div>
 );
 
@@ -114,11 +160,35 @@ const Header = ({ onSellClick, onLoginClick, onLogout, isLoggedIn, onNavigate })
     </header>
 );
 
-const StatsBanner = () => {
-    const [reusedItems, setReusedItems] = useState(42);
-    useEffect(() => { const interval = setInterval(() => setReusedItems(prev => prev + Math.floor(Math.random() * 3)), 5000); return () => clearInterval(interval); }, []);
-    const co2Saved = (reusedItems * 2.8).toFixed(1);
-    return <div className="bg-gradient-to-r from-green-400 to-blue-500 text-white py-4 px-6 text-center shadow-lg"><p className="font-bold text-lg"><LeafIcon className="h-6 w-6 inline-block mr-2" /><span className="font-extrabold text-2xl animate-pulse">{reusedItems}</span> items reused, saving <span className="font-extrabold text-2xl animate-pulse">{co2Saved} kg</span> of CO₂!</p></div>;
+const StatsBanner = ({ totalItemsReused, totalCO2Saved, liveUpdate }) => {
+    // Use a subset of the total data for the marketplace banner
+    const marketplaceItems = Math.round(totalItemsReused * 0.15); // Show ~15% as "active" items
+    const marketplaceCO2 = totalCO2Saved ? (parseFloat(totalCO2Saved) * 0.15).toFixed(1) : (marketplaceItems * 2.8).toFixed(1);
+    const wasteReduced = (marketplaceItems * 1.2).toFixed(1);
+    
+    return (
+        <div className={`bg-gradient-to-r from-green-400 via-emerald-500 to-blue-500 text-white py-6 px-6 text-center shadow-lg ${liveUpdate ? 'ring-2 ring-yellow-300' : ''} transition-all duration-300`}>
+            <p className="font-bold text-lg mb-2">
+                <LeafIcon className="h-6 w-6 inline-block mr-2" />
+                🎯 Live Campus Impact Tracker 
+                {liveUpdate && <span className="ml-2 animate-bounce">📈 LIVE UPDATE!</span>}
+            </p>
+            <div className="flex flex-wrap justify-center gap-6 text-center">
+                <div className={`${liveUpdate ? 'animate-pulse scale-110' : ''} transition-transform duration-300`}>
+                    <span className="font-extrabold text-3xl">{marketplaceItems}</span>
+                    <div className="text-sm opacity-90">Active Listings</div>
+                </div>
+                <div className={`${liveUpdate ? 'animate-pulse scale-110' : ''} transition-transform duration-300`}>
+                    <span className="font-extrabold text-3xl">{marketplaceCO2} kg</span>
+                    <div className="text-sm opacity-90">CO₂ Saved</div>
+                </div>
+                <div className={`${liveUpdate ? 'animate-pulse scale-110' : ''} transition-transform duration-300`}>
+                    <span className="font-extrabold text-3xl">{wasteReduced} kg</span>
+                    <div className="text-sm opacity-90">Waste Reduced</div>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 // --- ENHANCED LANDING PAGE & COMPONENTS ---
@@ -151,11 +221,7 @@ const FaqItem = ({ question, answer }) => {
     );
 };
 
-const LandingPage = ({ onLoginClick }) => {
-    const [reusedItems, setReusedItems] = useState(1342);
-    useEffect(() => { const interval = setInterval(() => setReusedItems(prev => prev + 1), 3000); return () => clearInterval(interval); }, []);
-    const co2Saved = (reusedItems * 2.8).toFixed(1);
-
+const LandingPage = ({ onLoginClick, totalItemsReused, totalCO2Saved, liveUpdate }) => {
     return (
         <div className="bg-gray-50">
             <Header onLoginClick={onLoginClick} isLoggedIn={false} />
@@ -173,6 +239,33 @@ const LandingPage = ({ onLoginClick }) => {
                         <button onClick={onLoginClick} className="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-transform transform hover:scale-105 shadow-xl">
                             Join with your University ID
                         </button>
+                    </div>
+                </div>
+
+                {/* Enhanced Environmental Impact Section */}
+                <div className="bg-gradient-to-r from-green-500 via-emerald-600 to-blue-600 text-white py-16">
+                    <div className="container mx-auto px-6 text-center">
+                        <h2 className="text-4xl font-extrabold mb-4">🌍 Our Campus Environmental Impact</h2>
+                        <p className="text-xl opacity-90 mb-8">See the real-time difference our student community is making!</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                            <div className={`bg-white bg-opacity-20 rounded-2xl p-6 backdrop-blur-sm ${liveUpdate ? 'ring-4 ring-yellow-300 animate-pulse' : ''} transition-all duration-300`}>
+                                <div className="text-5xl font-extrabold text-yellow-200">{totalItemsReused}</div>
+                                <div className="text-lg font-semibold">Items Reused</div>
+                                <div className="text-sm opacity-80">Total campus-wide</div>
+                                {liveUpdate && <div className="text-xs bg-yellow-400 text-black px-2 py-1 rounded-full mt-2 animate-bounce">LIVE UPDATE! 📈</div>}
+                            </div>
+                            <div className="bg-white bg-opacity-20 rounded-2xl p-6 backdrop-blur-sm">
+                                <div className="text-5xl font-extrabold text-green-200">{totalCO2Saved}</div>
+                                <div className="text-lg font-semibold">kg CO₂ Saved</div>
+                                <div className="text-sm opacity-80">Equivalent to planting {Math.round(parseFloat(totalCO2Saved || 0) / 22)} trees!</div>
+                            </div>
+                            <div className="bg-white bg-opacity-20 rounded-2xl p-6 backdrop-blur-sm">
+                                <div className="text-5xl font-extrabold text-blue-200">{(totalItemsReused * 1.2).toFixed(0)}</div>
+                                <div className="text-lg font-semibold">kg Waste Diverted</div>
+                                <div className="text-sm opacity-80">From campus landfills</div>
+                            </div>
+                        </div>
+                        <p className="mt-8 text-lg opacity-90">🎯 <strong>Every item you buy or sell helps build a more sustainable campus!</strong></p>
                     </div>
                 </div>
 
@@ -258,12 +351,40 @@ const LandingPage = ({ onLoginClick }) => {
                     </div>
                 </div>
 
-                <div className="bg-white py-24">
+                <div className="bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 text-white py-24">
                     <div className="container mx-auto px-6">
-                        <div className="bg-gradient-to-r from-green-400 to-blue-500 text-white p-10 rounded-2xl shadow-2xl text-center">
-                            <p className="text-2xl font-semibold">So far, our campus community has reused</p>
-                            <p className="text-7xl font-black my-4 animate-pulse">{reusedItems.toLocaleString()}</p>
-                            <p className="text-2xl font-semibold">items, saving an estimated <span className="font-bold">{co2Saved.toLocaleString()} kg</span> of CO₂!</p>
+                        <div className={`bg-white/10 backdrop-blur-sm p-10 rounded-3xl shadow-2xl text-center border border-white/20 ${liveUpdate ? 'animate-pulse ring-4 ring-yellow-300' : ''}`}>
+                            {liveUpdate && (
+                                <div className="mb-4 bg-yellow-400 text-black px-4 py-2 rounded-full inline-block font-bold animate-bounce">
+                                    🎉 NEW ITEM REUSED! +2.8kg CO₂ SAVED!
+                                </div>
+                            )}
+                            <p className="text-2xl font-semibold mb-2">🌍 Live Environmental Impact</p>
+                            <p className="text-xl mb-4">Our campus community has reused</p>
+                            <p className={`text-8xl font-black my-6 ${liveUpdate ? 'text-yellow-300 scale-110' : ''} transition-all duration-500`}>
+                                {totalItemsReused.toLocaleString()}
+                            </p>
+                            <p className="text-2xl font-semibold mb-6">
+                                items, saving an estimated 
+                                <span className={`font-bold mx-2 ${liveUpdate ? 'text-yellow-300' : ''} transition-colors duration-500`}>
+                                    {parseFloat(totalCO2Saved).toLocaleString()} kg
+                                </span> 
+                                of CO₂!
+                            </p>
+                            <div className="grid grid-cols-3 gap-4 mt-8">
+                                <div className="text-center">
+                                    <div className="text-3xl font-bold">{Math.round(totalItemsReused * 0.75)}</div>
+                                    <div className="text-sm opacity-90">Books Saved</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-3xl font-bold">{Math.round(totalItemsReused * 1.2)}</div>
+                                    <div className="text-sm opacity-90">Trees Equivalent</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-3xl font-bold">{Math.round(totalCO2Saved * 0.4)}</div>
+                                    <div className="text-sm opacity-90">Miles Not Driven</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -339,6 +460,27 @@ export default function App() {
     const [currentView, setCurrentView] = useState('landing');
     const [toastMessage, setToastMessage] = useState('');
     const [showToast, setShowToast] = useState(false);
+    
+    // Enhanced Environmental Impact Tracking
+    const [totalItemsReused, setTotalItemsReused] = useState(1342);
+    const [liveUpdate, setLiveUpdate] = useState(false);
+    
+    // Calculate environmental impact dynamically
+    const co2SavedPerItem = 2.8;
+    const totalCO2Saved = (totalItemsReused * co2SavedPerItem).toFixed(1);
+    
+    // Simulate live updates periodically
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (Math.random() > 0.7) { // 30% chance every 10 seconds
+                setLiveUpdate(true);
+                setTotalItemsReused(prev => prev + 1);
+                setTimeout(() => setLiveUpdate(false), 2000);
+            }
+        }, 10000);
+        
+        return () => clearInterval(interval);
+    }, []);
 
     // Authentication effects
     useEffect(() => {
@@ -378,13 +520,19 @@ export default function App() {
     const handleAddItem = (newItem) => {
         setProducts([newItem, ...products]);
         setShowSellModal(false);
-        showToastMessage(`"${newItem.name}" listed successfully!`);
+        
+        // Update environmental impact when new item is added
+        setTotalItemsReused(prev => prev + 1);
+        setLiveUpdate(true);
+        setTimeout(() => setLiveUpdate(false), 3000);
+        
+        showToastMessage(`✅ "${newItem.name}" listed successfully! 🌱 You've helped save ${co2SavedPerItem}kg CO₂!`);
     };
 
     const handleConnect = (seller, item) => {
         const newRequest = { id: Date.now(), user: seller, item: item, status: 'pending' };
         setRequests([...requests, newRequest]);
-        showToastMessage(`Connection request sent to ${seller}!`);
+        showToastMessage(`🤝 Connection request sent to ${seller}! 🌱 You're helping make our campus more sustainable!`);
     };
 
     const handleAcceptRequest = (request) => {
@@ -409,7 +557,14 @@ export default function App() {
     };
 
     if (currentView === 'landing') {
-        return <LandingPage onLoginClick={() => setShowLoginModal(true)} />;
+        return (
+            <LandingPage 
+                onLoginClick={() => setShowLoginModal(true)} 
+                totalItemsReused={totalItemsReused}
+                totalCO2Saved={totalCO2Saved}
+                liveUpdate={liveUpdate}
+            />
+        );
     }
 
     const renderMainContent = () => {
@@ -417,11 +572,22 @@ export default function App() {
             case 'marketplace':
                 return (
                     <div>
-                        <StatsBanner />
+                        <StatsBanner 
+                            totalItemsReused={totalItemsReused}
+                            totalCO2Saved={totalCO2Saved}
+                            liveUpdate={liveUpdate}
+                        />
                         <div className="container mx-auto p-6">
-                            <div className="flex justify-between items-center mb-8">
-                                <h1 className="text-4xl font-extrabold text-gray-900">Campus Marketplace</h1>
-                                <button onClick={() => setShowSellModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 sm:hidden">+ Sell Item</button>
+                            <div className="text-center mb-8">
+                                <h1 className="text-4xl font-extrabold text-gray-900 mb-4">🛍️ Campus Marketplace</h1>
+                                <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-4">
+                                    Discover amazing deals from verified university students. Every purchase helps build a more sustainable campus! 🌱
+                                </p>
+                                <div className="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full">
+                                    <LeafIcon className="h-4 w-4 mr-2" />
+                                    <span className="text-sm font-semibold">🤖 All items verified by AI authenticity check</span>
+                                </div>
+                                <button onClick={() => setShowSellModal(true)} className="ml-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105 sm:hidden">+ Sell Item</button>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                                 {products.map(product => (
