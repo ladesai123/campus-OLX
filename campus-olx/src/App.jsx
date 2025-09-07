@@ -461,9 +461,9 @@ export default function App() {
         setShowToast(false);
     };
 
-    // Show enhanced auth if not logged in
+    // Show landing page if not logged in
     if (!session && currentView === 'landing') {
-        return <EnhancedAuth onAuthSuccess={handleAuthSuccess} />;
+        return <LandingPage onLoginClick={() => setShowLoginModal(true)} />;
     }
 
     const renderMainContent = () => {
