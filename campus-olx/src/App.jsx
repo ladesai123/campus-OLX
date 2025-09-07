@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
+import EnhancedAuth from './components/EnhancedAuth';
+import AdminDashboard from './components/AdminDashboard';
+import EnhancedSellItemModal from './components/EnhancedSellItemModal';
+import { compressImage, validateImage, analyzeImageContent } from './utils/imageCompression';
+import { EmailService } from './utils/emailService';
 
 // --- MOCK DATA ---
 // In a real application, this data would come from a database.
@@ -95,15 +100,31 @@ const ProductCard = ({ product, onConnect }) => (
     </div>
 );
 
-const Header = ({ onSellClick, onLoginClick, onLogout, isLoggedIn, onNavigate }) => (
+const Header = ({ onSellClick, onLoginClick, onLogout, isLoggedIn, onNavigate, isAdmin, onAdminClick }) => (
     <header className="bg-white/80 backdrop-blur-lg shadow-md sticky top-0 z-40">
         <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
             <div className="text-2xl font-bold text-gray-800 cursor-pointer" onClick={() => isLoggedIn && onNavigate('marketplace')}>Campus<span className="text-blue-600">OLX</span></div>
             <div className="flex items-center space-x-4">
                 {isLoggedIn && <button onClick={onSellClick} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105 hidden sm:block">+ Sell Item</button>}
+                {isLoggedIn && isAdmin && (
+                    <button 
+                        onClick={onAdminClick}
+                        className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105 text-sm"
+                    >
+                        🔧 Admin
+                    </button>
+                )}
                 {isLoggedIn ? (
                     <>
-                        <div className="relative"><img src="https://placehold.co/40x40/E2E8F0/4A5568?text=U" alt="User Avatar" className="w-10 h-10 rounded-full cursor-pointer" onClick={() => onNavigate('profile')} /><span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 ring-2 ring-white"></span></div>
+                        <div className="relative">
+                            <img 
+                                src="https://placehold.co/40x40/E2E8F0/4A5568?text=U" 
+                                alt="User Avatar" 
+                                className="w-10 h-10 rounded-full cursor-pointer" 
+                                onClick={() => onNavigate('profile')} 
+                            />
+                            <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 ring-2 ring-white"></span>
+                        </div>
                         <button onClick={onLogout} className="font-semibold text-gray-600 hover:text-red-600 transition-colors">Logout</button>
                     </>
                 ) : (
@@ -336,9 +357,11 @@ export default function App() {
     const [chats, setChats] = useState(initialChats);
     const [showSellModal, setShowSellModal] = useState(false);
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showAdminDashboard, setShowAdminDashboard] = useState(false);
     const [currentView, setCurrentView] = useState('landing');
     const [toastMessage, setToastMessage] = useState('');
     const [showToast, setShowToast] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     // Authentication effects
     useEffect(() => {
@@ -346,6 +369,10 @@ export default function App() {
             setSession(session);
             if (session) {
                 setCurrentView('marketplace');
+                // Check if user is admin
+                if (session.user.email === 'admin@campusolx.com' || session.user.email?.includes('admin')) {
+                    setIsAdmin(true);
+                }
             }
         });
 
@@ -354,14 +381,25 @@ export default function App() {
                 setSession(session);
                 if (session) {
                     setCurrentView('marketplace');
+                    // Check admin status
+                    if (session.user.email === 'admin@campusolx.com' || session.user.email?.includes('admin')) {
+                        setIsAdmin(true);
+                    }
                 } else {
                     setCurrentView('landing');
+                    setIsAdmin(false);
                 }
             }
         );
 
         return () => subscription.unsubscribe();
     }, []);
+
+    const handleAuthSuccess = () => {
+        setShowLoginModal(false);
+        setCurrentView('marketplace');
+        showToastMessage('Welcome to CampusOLX! 🎉');
+    };
 
     const handleLogin = async () => {
         // This is a mock login - in real app, handle actual authentication
@@ -373,12 +411,27 @@ export default function App() {
         await supabase.auth.signOut();
         setSession(null);
         setCurrentView('landing');
+        setIsAdmin(false);
     };
 
-    const handleAddItem = (newItem) => {
-        setProducts([newItem, ...products]);
-        setShowSellModal(false);
-        showToastMessage(`"${newItem.name}" listed successfully!`);
+    const handleAddItem = async (newItem) => {
+        try {
+            // Send admin notification for review
+            if (isAdmin) {
+                await EmailService.sendAdminNotification(
+                    'admin@campusolx.com',
+                    newItem,
+                    session?.user?.email || 'unknown@university.edu'
+                );
+            }
+            
+            setProducts([newItem, ...products]);
+            setShowSellModal(false);
+            showToastMessage(`"${newItem.name}" submitted for review! You'll be notified once approved.`);
+        } catch (error) {
+            console.error('Error adding item:', error);
+            showToastMessage('Failed to submit item. Please try again.');
+        }
     };
 
     const handleConnect = (seller, item) => {
@@ -408,8 +461,9 @@ export default function App() {
         setShowToast(false);
     };
 
-    if (currentView === 'landing') {
-        return <LandingPage onLoginClick={() => setShowLoginModal(true)} />;
+    // Show enhanced auth if not logged in
+    if (!session && currentView === 'landing') {
+        return <EnhancedAuth onAuthSuccess={handleAuthSuccess} />;
     }
 
     const renderMainContent = () => {
@@ -421,7 +475,17 @@ export default function App() {
                         <div className="container mx-auto p-6">
                             <div className="flex justify-between items-center mb-8">
                                 <h1 className="text-4xl font-extrabold text-gray-900">Campus Marketplace</h1>
-                                <button onClick={() => setShowSellModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 sm:hidden">+ Sell Item</button>
+                                <div className="flex space-x-3">
+                                    <button onClick={() => setShowSellModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 sm:hidden">+ Sell Item</button>
+                                    {isAdmin && (
+                                        <button 
+                                            onClick={() => setShowAdminDashboard(true)}
+                                            className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
+                                        >
+                                            🔧 Admin
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                                 {products.map(product => (
@@ -457,21 +521,30 @@ export default function App() {
                 onLogout={handleLogout}
                 isLoggedIn={!!session}
                 onNavigate={setCurrentView}
+                isAdmin={isAdmin}
+                onAdminClick={() => setShowAdminDashboard(true)}
             />
             
             {renderMainContent()}
 
-            <SellItemModal 
+            <EnhancedSellItemModal 
                 show={showSellModal}
                 onClose={() => setShowSellModal(false)}
                 onAddItem={handleAddItem}
             />
 
-            <LoginModal 
-                show={showLoginModal}
-                onClose={() => setShowLoginModal(false)}
-                onLogin={handleLogin}
-            />
+            {showLoginModal && (
+                <EnhancedAuth 
+                    onAuthSuccess={() => {
+                        setShowLoginModal(false);
+                        handleAuthSuccess();
+                    }}
+                />
+            )}
+
+            {showAdminDashboard && (
+                <AdminDashboard onClose={() => setShowAdminDashboard(false)} />
+            )}
 
             <Toast 
                 message={toastMessage}
