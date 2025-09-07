@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 import EnhancedAuth from './components/EnhancedAuth';
 import AdminDashboard from './components/AdminDashboard';
 import EnhancedSellItemModal from './components/EnhancedSellItemModal';
-import { compressImage, validateImage, analyzeImageContent } from './utils/imageCompression';
+// import { compressImage, validateImage, analyzeImageContent } from './utils/imageCompression';
 import { EmailService } from './utils/emailService';
 import { generatePlaceholder, generateAvatarPlaceholder, DEFAULT_PLACEHOLDER } from './utils/placeholders';
 
@@ -402,11 +402,11 @@ export default function App() {
         showToastMessage('Welcome to CampusOLX! 🎉');
     };
 
-    const handleLogin = async () => {
-        // This is a mock login - in real app, handle actual authentication
-        setSession({ user: { id: 'mock-user', email: 'student@university.edu' } });
-        showToastMessage('Welcome to CampusOLX!');
-    };
+    // const handleLogin = async () => {
+    //     // This is a mock login - in real app, handle actual authentication
+    //     setSession({ user: { id: 'mock-user', email: 'student@university.edu' } });
+    //     showToastMessage('Welcome to CampusOLX!');
+    // };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
