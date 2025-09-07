@@ -3,8 +3,9 @@ import { supabase } from './supabaseClient';
 import EnhancedAuth from './components/EnhancedAuth';
 import AdminDashboard from './components/AdminDashboard';
 import EnhancedSellItemModal from './components/EnhancedSellItemModal';
-import { compressImage, validateImage, analyzeImageContent } from './utils/imageCompression';
+// import { compressImage, validateImage, analyzeImageContent } from './utils/imageCompression';
 import { EmailService } from './utils/emailService';
+import { generatePlaceholder, generateAvatarPlaceholder, DEFAULT_PLACEHOLDER } from './utils/placeholders';
 
 // --- MOCK DATA ---
 // In a real application, this data would come from a database.
@@ -81,7 +82,7 @@ const SellItemModal = ({ show, onClose, onAddItem }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-        const newItem = { id: Date.now(), name: e.target.itemName.value, price: isFree ? 0 : parseFloat(price), seller: 'You', imageUrl: `https://placehold.co/600x400/7C3AED/FFFFFF?text=${encodeURIComponent(e.target.itemName.value)}`, isFree: isFree };
+        const newItem = { id: Date.now(), name: e.target.itemName.value, price: isFree ? 0 : parseFloat(price), seller: 'You', imageUrl: generatePlaceholder(600, 400, e.target.itemName.value, '#7C3AED', '#FFFFFF'), isFree: isFree };
         setItemName(newItem.name);
         setTimeout(() => { setIsSubmitting(false); onAddItem(newItem); }, 2500);
     };
@@ -95,7 +96,7 @@ const SellItemModal = ({ show, onClose, onAddItem }) => {
 
 const ProductCard = ({ product, onConnect }) => (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden group transform hover:-translate-y-2 transition-transform duration-300">
-        <div className="relative"><img className="w-full h-48 object-cover" src={product.imageUrl} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400/CCCCCC/FFFFFF?text=Image+Error'; }} />{product.isFree && <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">FREE</div>}</div>
+        <div className="relative"><img className="w-full h-48 object-cover" src={product.imageUrl} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_PLACEHOLDER; }} />{product.isFree && <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">FREE</div>}</div>
         <div className="p-5"><h3 className="text-lg font-bold text-gray-800 truncate">{product.name}</h3><p className="text-gray-600 mb-3">Sold by {product.seller}</p><div className="flex justify-between items-center"><p className="text-2xl font-black text-blue-600">${product.price.toFixed(2)}</p><button onClick={() => onConnect && onConnect(product.seller, product.name)} className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">Connect</button></div></div>
     </div>
 );
@@ -118,7 +119,7 @@ const Header = ({ onSellClick, onLoginClick, onLogout, isLoggedIn, onNavigate, i
                     <>
                         <div className="relative">
                             <img 
-                                src="https://placehold.co/40x40/E2E8F0/4A5568?text=U" 
+                                src={generateAvatarPlaceholder('U', 40)} 
                                 alt="User Avatar" 
                                 className="w-10 h-10 rounded-full cursor-pointer" 
                                 onClick={() => onNavigate('profile')} 
@@ -322,7 +323,7 @@ const ChatInterface = ({ chat, onBack, onSendMessage }) => {
     const handleSend = () => { if (newMessage.trim()) { onSendMessage(chat.id, newMessage); setNewMessage(''); } };
     return (
         <div className="flex flex-col h-full bg-white">
-            <header className="flex items-center p-4 border-b bg-gray-50"><button onClick={onBack} className="mr-4 text-gray-600 hover:text-gray-900"><ArrowLeftIcon /></button><img src={`https://placehold.co/40x40/E2E8F0/4A5568?text=${chat.user.charAt(0)}`} alt={chat.user} className="w-10 h-10 rounded-full mr-3" /><div><h3 className="font-bold text-gray-800">{chat.user}</h3><p className={`text-sm ${chat.online ? 'text-green-500' : 'text-gray-500'}`}>{chat.online ? 'Online' : 'Offline'}</p></div></header>
+            <header className="flex items-center p-4 border-b bg-gray-50"><button onClick={onBack} className="mr-4 text-gray-600 hover:text-gray-900"><ArrowLeftIcon /></button><img src={generateAvatarPlaceholder(chat.user.charAt(0), 40)} alt={chat.user} className="w-10 h-10 rounded-full mr-3" /><div><h3 className="font-bold text-gray-800">{chat.user}</h3><p className={`text-sm ${chat.online ? 'text-green-500' : 'text-gray-500'}`}>{chat.online ? 'Online' : 'Offline'}</p></div></header>
             <main className="flex-1 p-4 overflow-y-auto bg-gray-100">{chat.messages.map((msg, index) => (<div key={index} className={`flex mb-4 ${msg.sender === 'You' ? 'justify-end' : 'justify-start'}`}><div className={`rounded-2xl py-2 px-4 max-w-xs lg:max-w-md ${msg.sender === 'You' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none'}`}>{msg.text}</div></div>))}<div ref={messagesEndRef} /></main>
             <footer className="p-4 border-t bg-white"><div className="flex items-center"><input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="flex-1 border rounded-full py-3 px-5 focus:outline-none focus:ring-2 focus:ring-blue-500" /><button onClick={handleSend} className="ml-4 bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-colors"><SendIcon /></button></div></footer>
         </div>
@@ -343,7 +344,7 @@ const ProfilePage = ({ requests, chats, onAcceptRequest, showToast }) => {
     return (
         <div className="container mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-1"><h2 className="text-3xl font-extrabold text-gray-900 mb-4">Connection Requests</h2><div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">{requests.length > 0 ? requests.map(req => (<div key={req.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><div><p className="font-bold">{req.user}</p><p className="text-sm text-gray-600">re: {req.item}</p></div><button onClick={() => handleAccept(req)} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm">Accept</button></div>)) : <p className="text-gray-500">No new connection requests.</p>}</div></div>
-            <div className="md:col-span-2"><h2 className="text-3xl font-extrabold text-gray-900 mb-4">Your Chats</h2><div className="bg-white rounded-2xl shadow-lg overflow-hidden"><ul className="divide-y divide-gray-200">{currentChats.map(chat => (<li key={chat.id} onClick={() => setActiveChat(chat)} className="p-4 flex items-center hover:bg-gray-50 cursor-pointer"><div className="relative"><img src={`https://placehold.co/50x50/E2E8F0/4A5568?text=${chat.user.charAt(0)}`} alt={chat.user} className="w-12 h-12 rounded-full mr-4" />{chat.online && <span className="absolute bottom-0 right-4 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white"></span>}</div><div className="flex-1"><div className="flex justify-between"><h3 className="font-bold text-gray-800">{chat.user}</h3><p className="text-sm text-gray-500">2 min ago</p></div><p className="text-sm text-gray-600 truncate">{chat.messages[chat.messages.length - 1].text}</p></div></li>))}</ul></div></div>
+            <div className="md:col-span-2"><h2 className="text-3xl font-extrabold text-gray-900 mb-4">Your Chats</h2><div className="bg-white rounded-2xl shadow-lg overflow-hidden"><ul className="divide-y divide-gray-200">{currentChats.map(chat => (<li key={chat.id} onClick={() => setActiveChat(chat)} className="p-4 flex items-center hover:bg-gray-50 cursor-pointer"><div className="relative"><img src={generateAvatarPlaceholder(chat.user.charAt(0), 50)} alt={chat.user} className="w-12 h-12 rounded-full mr-4" />{chat.online && <span className="absolute bottom-0 right-4 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white"></span>}</div><div className="flex-1"><div className="flex justify-between"><h3 className="font-bold text-gray-800">{chat.user}</h3><p className="text-sm text-gray-500">2 min ago</p></div><p className="text-sm text-gray-600 truncate">{chat.messages[chat.messages.length - 1].text}</p></div></li>))}</ul></div></div>
         </div>
     );
 };
@@ -401,11 +402,11 @@ export default function App() {
         showToastMessage('Welcome to CampusOLX! 🎉');
     };
 
-    const handleLogin = async () => {
-        // This is a mock login - in real app, handle actual authentication
-        setSession({ user: { id: 'mock-user', email: 'student@university.edu' } });
-        showToastMessage('Welcome to CampusOLX!');
-    };
+    // const handleLogin = async () => {
+    //     // This is a mock login - in real app, handle actual authentication
+    //     setSession({ user: { id: 'mock-user', email: 'student@university.edu' } });
+    //     showToastMessage('Welcome to CampusOLX!');
+    // };
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
