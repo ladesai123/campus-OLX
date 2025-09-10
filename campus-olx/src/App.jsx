@@ -7,15 +7,33 @@ import { compressImage, validateImage, analyzeImageContent } from './utils/image
 import { EmailService } from './utils/emailService';
 import { CampusOLXAPI } from './utils/api';
 
+// Utility function to generate avatar SVG
+const generateAvatar = (initials, color = '#6B7280') => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+        <circle cx="20" cy="20" r="20" fill="${color}"/>
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="bold">${initials}</text>
+    </svg>`;
+    return `data:image/svg+xml;base64,${btoa(svg)}`;
+};
+const generateProductImage = (itemName, color = '#3B82F6') => {
+    const initials = itemName.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+        <rect width="400" height="300" fill="${color}"/>
+        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="48" font-weight="bold">${initials}</text>
+        <text x="50%" y="70%" dominant-baseline="middle" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14" opacity="0.8">${itemName}</text>
+    </svg>`;
+    return `data:image/svg+xml;base64,${btoa(svg)}`;
+};
+
 // --- MOCK DATA ---
 // In a real application, this data would come from a database.
 const initialProducts = [
-  { id: 1, name: 'Used "Intro to CS" Textbook', price: 45.00, seller: 'Alice J.', imageUrl: 'https://images.unsplash.com/photo-1589998059171-988d887df646?q=80&w=2070&auto=format&fit=crop', isFree: false },
-  { id: 2, name: 'Barely Used Desk Lamp', price: 15.00, seller: 'Bob K.', imageUrl: 'https://images.unsplash.com/photo-1543469582-01e1d493a18a?q=80&w=1974&auto=format&fit=crop', isFree: false },
-  { id: 3, name: 'Acoustic Guitar', price: 120.00, seller: 'Charlie M.', imageUrl: 'https://images.unsplash.com/photo-1510915361894-db8b60106945?q=80&w=2070&auto=format&fit=crop', isFree: false },
-  { id: 4, name: 'Mini Fridge', price: 0, seller: 'Diana P.', imageUrl: 'https://images.unsplash.com/photo-1620789492809-52882a1f5e26?q=80&w=1974&auto=format&fit=crop', isFree: true },
-  { id: 5, name: 'Set of 4 Mugs', price: 10.00, seller: 'Ethan W.', imageUrl: 'https://images.unsplash.com/photo-1594312247936-d351a2a24f46?q=80&w=1974&auto=format&fit=crop', isFree: false },
-  { id: 6, name: 'Scientific Calculator', price: 25.00, seller: 'Fiona G.', imageUrl: 'https://images.unsplash.com/photo-1596496050827-4208a63f0329?q=80&w=2070&auto=format&fit=crop', isFree: false },
+  { id: 1, name: 'Used "Intro to CS" Textbook', price: 45.00, seller: 'Alice J.', imageUrl: generateProductImage('Textbook', '#059669'), isFree: false },
+  { id: 2, name: 'Barely Used Desk Lamp', price: 15.00, seller: 'Bob K.', imageUrl: generateProductImage('Lamp', '#DC2626'), isFree: false },
+  { id: 3, name: 'Acoustic Guitar', price: 120.00, seller: 'Charlie M.', imageUrl: generateProductImage('Guitar', '#7C2D12'), isFree: false },
+  { id: 4, name: 'Mini Fridge', price: 0, seller: 'Diana P.', imageUrl: generateProductImage('Fridge', '#1E40AF'), isFree: true },
+  { id: 5, name: 'Set of 4 Mugs', price: 10.00, seller: 'Ethan W.', imageUrl: generateProductImage('Mugs', '#7C3AED'), isFree: false },
+  { id: 6, name: 'Scientific Calculator', price: 25.00, seller: 'Fiona G.', imageUrl: generateProductImage('Calculator', '#059669'), isFree: false },
 ];
 
 const featuredProducts = initialProducts.slice(0, 4); // For the landing page
@@ -82,7 +100,7 @@ const SellItemModal = ({ show, onClose, onAddItem }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         setIsSubmitting(true);
-        const newItem = { id: Date.now(), name: e.target.itemName.value, price: isFree ? 0 : parseFloat(price), seller: 'You', imageUrl: `https://placehold.co/600x400/7C3AED/FFFFFF?text=${encodeURIComponent(e.target.itemName.value)}`, isFree: isFree };
+        const newItem = { id: Date.now(), name: e.target.itemName.value, price: isFree ? 0 : parseFloat(price), seller: 'You', imageUrl: generateProductImage(e.target.itemName.value, '#7C3AED'), isFree: isFree };
         setItemName(newItem.name);
         setTimeout(() => { setIsSubmitting(false); onAddItem(newItem); }, 2500);
     };
@@ -96,7 +114,7 @@ const SellItemModal = ({ show, onClose, onAddItem }) => {
 
 const ProductCard = ({ product, onConnect }) => (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden group transform hover:-translate-y-2 transition-transform duration-300">
-        <div className="relative"><img className="w-full h-48 object-cover" src={product.imageUrl} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400/CCCCCC/FFFFFF?text=Image+Error'; }} />{product.isFree && <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">FREE</div>}</div>
+        <div className="relative"><img className="w-full h-48 object-cover" src={product.imageUrl} alt={product.name} onError={(e) => { e.target.onerror = null; e.target.src = generateProductImage(product.name, '#CCCCCC'); }} />{product.isFree && <div className="absolute top-3 right-3 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">FREE</div>}</div>
         <div className="p-5"><h3 className="text-lg font-bold text-gray-800 truncate">{product.name}</h3><p className="text-gray-600 mb-3">Sold by {product.seller}</p><div className="flex justify-between items-center"><p className="text-2xl font-black text-blue-600">${product.price.toFixed(2)}</p><button onClick={() => onConnect && onConnect(product.seller, product.name)} className="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">Connect</button></div></div>
     </div>
 );
@@ -104,7 +122,9 @@ const ProductCard = ({ product, onConnect }) => (
 const Header = ({ onSellClick, onLoginClick, onLogout, isLoggedIn, onNavigate, isAdmin, onAdminClick }) => (
     <header className="bg-white/80 backdrop-blur-lg shadow-md sticky top-0 z-40">
         <nav className="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div className="text-2xl font-bold text-gray-800 cursor-pointer" onClick={() => isLoggedIn && onNavigate('marketplace')}>Campus<span className="text-blue-600">OLX</span></div>
+            <div className="text-3xl font-black text-gray-800 cursor-pointer tracking-tight" onClick={() => isLoggedIn && onNavigate('marketplace')}>
+                Campus<span className="text-blue-600 bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">OLX</span>
+            </div>
             <div className="flex items-center space-x-4">
                 {isLoggedIn && <button onClick={onSellClick} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105 hidden sm:block">+ Sell Item</button>}
                 {isLoggedIn && isAdmin && (
@@ -119,7 +139,7 @@ const Header = ({ onSellClick, onLoginClick, onLogout, isLoggedIn, onNavigate, i
                     <>
                         <div className="relative">
                             <img 
-                                src="https://placehold.co/40x40/E2E8F0/4A5568?text=U" 
+                                src={generateAvatar('U', '#4A5568')} 
                                 alt="User Avatar" 
                                 className="w-10 h-10 rounded-full cursor-pointer" 
                                 onClick={() => onNavigate('profile')} 
@@ -129,7 +149,7 @@ const Header = ({ onSellClick, onLoginClick, onLogout, isLoggedIn, onNavigate, i
                         <button onClick={onLogout} className="font-semibold text-gray-600 hover:text-red-600 transition-colors">Logout</button>
                     </>
                 ) : (
-                    <button onClick={onLoginClick} className="font-semibold text-gray-600 hover:text-blue-600">Log In / Sign Up</button>
+                    <button onClick={onLoginClick} className="font-bold text-gray-600 hover:text-blue-600 transition-colors duration-200 py-2 px-4 rounded-lg hover:bg-blue-50">Log In / Sign Up</button>
                 )}
             </div>
         </nav>
@@ -182,17 +202,38 @@ const LandingPage = ({ onLoginClick }) => {
         <div className="bg-gray-50">
             <Header onLoginClick={onLoginClick} isLoggedIn={false} />
             <main>
-                <div className="relative">
-                    <div className="absolute inset-0 bg-black opacity-40"></div>
-                    <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=2070&auto=format&fit=crop" className="w-full h-[60vh] object-cover" alt="Students collaborating on campus"/>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-6">
-                        <h1 className="text-5xl md:text-7xl font-extrabold leading-tight shadow-lg">
-                            Save Money. <span className="text-blue-400">Save the Planet.</span>
+                <div className="relative min-h-[80vh] flex items-center justify-center">
+                    {/* University library-inspired background with book shelves pattern */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900 via-amber-800 to-amber-900"></div>
+                    
+                    {/* Subtle book shelves pattern overlay */}
+                    <div className="absolute inset-0 opacity-20" style={{
+                        backgroundImage: `
+                            linear-gradient(90deg, #8B4513 2px, transparent 2px),
+                            linear-gradient(0deg, #654321 2px, transparent 2px),
+                            linear-gradient(90deg, #A0522D 1px, transparent 1px),
+                            linear-gradient(0deg, #8B4513 1px, transparent 1px)
+                        `,
+                        backgroundSize: '120px 40px, 120px 40px, 20px 10px, 20px 10px'
+                    }}></div>
+                    
+                    {/* Warm library lighting effect */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-yellow-200/10 via-transparent to-amber-900/20"></div>
+                    
+                    {/* Enhanced semi-transparent overlay for better text readability */}
+                    <div className="absolute inset-0 bg-black/50"></div>
+                    
+                    <div className="relative z-10 flex flex-col items-center justify-center text-center text-white px-6 py-20 max-w-5xl mx-auto">
+                        <h1 className="text-5xl md:text-8xl font-black leading-tight mb-8 tracking-tight drop-shadow-2xl">
+                            Save Money. <span className="text-blue-400 drop-shadow-lg">Save the Planet.</span>
                         </h1>
-                        <p className="mt-4 text-lg max-w-2xl shadow-lg">
-                            The official marketplace for our university. Get great deals on used items from students you trust, or give your old gear a new life.
+                        <p className="text-xl md:text-2xl max-w-4xl leading-relaxed text-gray-100 mb-12 font-medium drop-shadow-lg">
+                            The official marketplace for university students. Buy and sell pre-owned items from fellow students you trust, or give your old gear a new life while building community within your campus.
                         </p>
-                        <button onClick={onLoginClick} className="mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-lg transition-transform transform hover:scale-105 shadow-xl">
+                        <button 
+                            onClick={onLoginClick} 
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-6 px-12 rounded-xl text-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-xl border-2 border-blue-500 hover:border-blue-400 drop-shadow-lg"
+                        >
                             Join with your University ID
                         </button>
                     </div>
@@ -251,19 +292,19 @@ const LandingPage = ({ onLoginClick }) => {
                                 quote="I sold my old chemistry textbook in a day and used the money for concert tickets. So much easier than other sites!"
                                 author="Jessica L."
                                 major="Chemistry, '26"
-                                avatar="https://images.unsplash.com/photo-1529232353706-35c94a552865?q=80&w=1974&auto=format&fit=crop"
+                                avatar={generateAvatar('JL', '#EC4899')}
                             />
                             <TestimonialCard 
                                 quote="Furnishing my dorm room was actually affordable thanks to CampusOLX. I got a great mini-fridge for free!"
                                 author="Mike R."
                                 major="Computer Science, '25"
-                                avatar="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop"
+                                avatar={generateAvatar('MR', '#3B82F6')}
                             />
                             <TestimonialCard 
                                 quote="It just feels safer knowing I'm dealing with other students from my university. The whole process is super smooth."
                                 author="Chloe T."
                                 major="Business Admin, '27"
-                                avatar="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop"
+                                avatar={generateAvatar('CT', '#10B981')}
                             />
                         </div>
                     </div>
@@ -323,7 +364,7 @@ const ChatInterface = ({ chat, onBack, onSendMessage }) => {
     const handleSend = () => { if (newMessage.trim()) { onSendMessage(chat.id, newMessage); setNewMessage(''); } };
     return (
         <div className="flex flex-col h-full bg-white">
-            <header className="flex items-center p-4 border-b bg-gray-50"><button onClick={onBack} className="mr-4 text-gray-600 hover:text-gray-900"><ArrowLeftIcon /></button><img src={`https://placehold.co/40x40/E2E8F0/4A5568?text=${chat.user.charAt(0)}`} alt={chat.user} className="w-10 h-10 rounded-full mr-3" /><div><h3 className="font-bold text-gray-800">{chat.user}</h3><p className={`text-sm ${chat.online ? 'text-green-500' : 'text-gray-500'}`}>{chat.online ? 'Online' : 'Offline'}</p></div></header>
+            <header className="flex items-center p-4 border-b bg-gray-50"><button onClick={onBack} className="mr-4 text-gray-600 hover:text-gray-900"><ArrowLeftIcon /></button><img src={generateAvatar(chat.user.charAt(0), '#4A5568')} alt={chat.user} className="w-10 h-10 rounded-full mr-3" /><div><h3 className="font-bold text-gray-800">{chat.user}</h3><p className={`text-sm ${chat.online ? 'text-green-500' : 'text-gray-500'}`}>{chat.online ? 'Online' : 'Offline'}</p></div></header>
             <main className="flex-1 p-4 overflow-y-auto bg-gray-100">{chat.messages.map((msg, index) => (<div key={index} className={`flex mb-4 ${msg.sender === 'You' ? 'justify-end' : 'justify-start'}`}><div className={`rounded-2xl py-2 px-4 max-w-xs lg:max-w-md ${msg.sender === 'You' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none'}`}>{msg.text}</div></div>))}<div ref={messagesEndRef} /></main>
             <footer className="p-4 border-t bg-white"><div className="flex items-center"><input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleSend()} placeholder="Type a message..." className="flex-1 border rounded-full py-3 px-5 focus:outline-none focus:ring-2 focus:ring-blue-500" /><button onClick={handleSend} className="ml-4 bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-colors"><SendIcon /></button></div></footer>
         </div>
@@ -344,7 +385,7 @@ const ProfilePage = ({ requests, chats, onAcceptRequest, showToast }) => {
     return (
         <div className="container mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-1"><h2 className="text-3xl font-extrabold text-gray-900 mb-4">Connection Requests</h2><div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">{requests.length > 0 ? requests.map(req => (<div key={req.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"><div><p className="font-bold">{req.user}</p><p className="text-sm text-gray-600">re: {req.item}</p></div><button onClick={() => handleAccept(req)} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm">Accept</button></div>)) : <p className="text-gray-500">No new connection requests.</p>}</div></div>
-            <div className="md:col-span-2"><h2 className="text-3xl font-extrabold text-gray-900 mb-4">Your Chats</h2><div className="bg-white rounded-2xl shadow-lg overflow-hidden"><ul className="divide-y divide-gray-200">{currentChats.map(chat => (<li key={chat.id} onClick={() => setActiveChat(chat)} className="p-4 flex items-center hover:bg-gray-50 cursor-pointer"><div className="relative"><img src={`https://placehold.co/50x50/E2E8F0/4A5568?text=${chat.user.charAt(0)}`} alt={chat.user} className="w-12 h-12 rounded-full mr-4" />{chat.online && <span className="absolute bottom-0 right-4 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white"></span>}</div><div className="flex-1"><div className="flex justify-between"><h3 className="font-bold text-gray-800">{chat.user}</h3><p className="text-sm text-gray-500">2 min ago</p></div><p className="text-sm text-gray-600 truncate">{chat.messages[chat.messages.length - 1].text}</p></div></li>))}</ul></div></div>
+            <div className="md:col-span-2"><h2 className="text-3xl font-extrabold text-gray-900 mb-4">Your Chats</h2><div className="bg-white rounded-2xl shadow-lg overflow-hidden"><ul className="divide-y divide-gray-200">{currentChats.map(chat => (<li key={chat.id} onClick={() => setActiveChat(chat)} className="p-4 flex items-center hover:bg-gray-50 cursor-pointer"><div className="relative"><img src={generateAvatar(chat.user.charAt(0), '#4A5568')} alt={chat.user} className="w-12 h-12 rounded-full mr-4" />{chat.online && <span className="absolute bottom-0 right-4 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white"></span>}</div><div className="flex-1"><div className="flex justify-between"><h3 className="font-bold text-gray-800">{chat.user}</h3><p className="text-sm text-gray-500">2 min ago</p></div><p className="text-sm text-gray-600 truncate">{chat.messages[chat.messages.length - 1].text}</p></div></li>))}</ul></div></div>
         </div>
     );
 };
