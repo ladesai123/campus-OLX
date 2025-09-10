@@ -5,6 +5,7 @@ import AdminDashboard from './components/AdminDashboard';
 import EnhancedSellItemModal from './components/EnhancedSellItemModal';
 import { compressImage, validateImage, analyzeImageContent } from './utils/imageCompression';
 import { EmailService } from './utils/emailService';
+import { CampusOLXAPI } from './utils/api';
 
 // --- MOCK DATA ---
 // In a real application, this data would come from a database.
@@ -352,6 +353,7 @@ const ProfilePage = ({ requests, chats, onAcceptRequest, showToast }) => {
 // --- MAIN APP COMPONENT ---
 export default function App() {
     const [session, setSession] = useState(null);
+    const [user, setUser] = useState(null);
     const [products, setProducts] = useState(initialProducts);
     const [requests, setRequests] = useState(initialRequests);
     const [chats, setChats] = useState(initialChats);
@@ -362,82 +364,136 @@ export default function App() {
     const [toastMessage, setToastMessage] = useState('');
     const [showToast, setShowToast] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     // Authentication effects
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            if (session) {
-                setCurrentView('marketplace');
-                // Check if user is admin
-                if (session.user.email === 'admin@campusolx.com' || session.user.email?.includes('admin')) {
-                    setIsAdmin(true);
-                }
-            }
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            (_event, session) => {
-                setSession(session);
-                if (session) {
-                    setCurrentView('marketplace');
-                    // Check admin status
-                    if (session.user.email === 'admin@campusolx.com' || session.user.email?.includes('admin')) {
-                        setIsAdmin(true);
-                    }
-                } else {
-                    setCurrentView('landing');
-                    setIsAdmin(false);
-                }
-            }
-        );
-
-        return () => subscription.unsubscribe();
+        initializeAuth();
     }, []);
 
-    const handleAuthSuccess = () => {
+    const initializeAuth = async () => {
+        try {
+            // Check if user has a valid token
+            const token = localStorage.getItem('campus_olx_token');
+            if (token) {
+                const result = await CampusOLXAPI.verifyToken();
+                setUser(result.user);
+                setSession({ user: result.user });
+                setCurrentView('marketplace');
+                setIsAdmin(result.user.admin || false);
+            }
+        } catch (error) {
+            console.error('Auth initialization error:', error);
+            // Clear invalid token
+            localStorage.removeItem('campus_olx_token');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAuthSuccess = async (userData) => {
+        setUser(userData);
+        setSession({ user: userData });
         setShowLoginModal(false);
         setCurrentView('marketplace');
+        setIsAdmin(userData.admin || false);
         showToastMessage('Welcome to CampusOLX! 🎉');
+        
+        // Load user's items and chats
+        try {
+            await loadUserData();
+        } catch (error) {
+            console.error('Error loading user data:', error);
+        }
+    };
+
+    const loadUserData = async () => {
+        try {
+            // Load items
+            const itemsResponse = await CampusOLXAPI.getItems();
+            setProducts(itemsResponse.items || []);
+            
+            // Load chats if user is logged in
+            if (user) {
+                const chatsResponse = await CampusOLXAPI.getChats();
+                setChats(chatsResponse.chats || []);
+            }
+        } catch (error) {
+            console.error('Error loading data:', error);
+        }
     };
 
     const handleLogin = async () => {
-        // This is a mock login - in real app, handle actual authentication
-        setSession({ user: { id: 'mock-user', email: 'student@university.edu' } });
-        showToastMessage('Welcome to CampusOLX!');
+        setShowLoginModal(true);
     };
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        setSession(null);
-        setCurrentView('landing');
-        setIsAdmin(false);
+        try {
+            await CampusOLXAPI.logout();
+            setSession(null);
+            setUser(null);
+            setCurrentView('landing');
+            setIsAdmin(false);
+            setProducts(initialProducts); // Reset to mock data
+            setChats([]);
+            showToastMessage('Logged out successfully');
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
     };
 
     const handleAddItem = async (newItem) => {
         try {
-            // Send admin notification for review
-            if (isAdmin) {
-                await EmailService.sendAdminNotification(
-                    'admin@campusolx.com',
-                    newItem,
-                    session?.user?.email || 'unknown@university.edu'
-                );
-            }
+            // Create FormData for image upload
+            const formData = new FormData();
+            formData.append('name', newItem.name);
+            formData.append('description', newItem.description || '');
+            formData.append('price', newItem.price.toString());
+            formData.append('category', newItem.category);
             
-            setProducts([newItem, ...products]);
+            // Add images if they exist
+            if (newItem.images && newItem.images.length > 0) {
+                newItem.images.forEach((image, index) => {
+                    formData.append('images', image);
+                });
+            }
+
+            const result = await CampusOLXAPI.createItem(formData);
+            
             setShowSellModal(false);
             showToastMessage(`"${newItem.name}" submitted for review! You'll be notified once approved.`);
+            
+            // Reload items to show updated list
+            await loadUserData();
         } catch (error) {
             console.error('Error adding item:', error);
             showToastMessage('Failed to submit item. Please try again.');
         }
     };
 
-    const handleConnect = (seller, item) => {
-        const newRequest = { id: Date.now(), user: seller, item: item, status: 'pending' };
-        setRequests([...requests, newRequest]);
-        showToastMessage(`Connection request sent to ${seller}!`);
+    const handleConnect = async (seller, item) => {
+        try {
+            if (!user) {
+                showToastMessage('Please log in to connect with sellers');
+                setShowLoginModal(true);
+                return;
+            }
+
+            // Find the item to get seller ID
+            const itemData = products.find(p => p.name === item);
+            if (itemData) {
+                await CampusOLXAPI.createChat(itemData.id, itemData.seller_id);
+                showToastMessage(`Connection request sent to ${seller}!`);
+                await loadUserData(); // Reload chats
+            }
+        } catch (error) {
+            console.error('Error creating chat:', error);
+            if (error.message.includes('already exists')) {
+                showToastMessage('Chat already exists with this seller');
+            } else {
+                showToastMessage('Failed to connect. Please try again.');
+            }
+        }
     };
 
     const handleAcceptRequest = (request) => {

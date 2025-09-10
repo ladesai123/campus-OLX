@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import { CampusOLXAPI } from '../utils/api.js';
 
 const GoogleIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" className="mr-2">
@@ -48,19 +48,12 @@ const EnhancedAuth = ({ onAuthSuccess }) => {
       // Simulate successful OAuth with email extraction
       const mockEmail = 'student@university.edu';
       try {
-        // In production, this would be handled by Supabase OAuth
-        const { data, error } = await supabase.auth.signUp({
+        const result = await CampusOLXAPI.googleAuth({
           email: mockEmail,
-          password: 'oauth-generated-password'
+          name: 'Student User'
         });
         
-        if (error) throw error;
-        
-        if (data.user) {
-          // Send welcome email
-          await sendWelcomeEmail(mockEmail);
-          onAuthSuccess();
-        }
+        onAuthSuccess(result.user);
       } catch (err) {
         setError('Account creation failed. Please try again.');
       }
@@ -88,41 +81,18 @@ const EnhancedAuth = ({ onAuthSuccess }) => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        onAuthSuccess();
+        const result = await CampusOLXAPI.login({ email, password });
+        onAuthSuccess(result.user);
       } else {
-        const { data, error } = await supabase.auth.signUp({
-          email,
+        const result = await CampusOLXAPI.register({ 
+          email, 
           password,
+          name: email.split('@')[0] // Use email prefix as default name
         });
-        if (error) throw error;
-        
-        if (data.user) {
-          // Insert user into profiles table
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .insert([{ 
-              id: data.user.id, 
-              email: data.user.email,
-              verified: false,
-              created_at: new Date().toISOString()
-            }]);
-
-          if (profileError) {
-            console.error('Profile insert error:', profileError.message);
-          }
-
-          // Send welcome email
-          await sendWelcomeEmail(email);
-          setError('Success! Check your email for verification.');
-        }
+        onAuthSuccess(result.user);
       }
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Authentication failed');
     } finally {
       setLoading(false);
     }
